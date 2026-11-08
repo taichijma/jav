@@ -56,8 +56,8 @@ Usage: install.sh [--prefix DIR] [--release [TAG]] [--source] [--src DIR]
                      the current agent already loads. Defaults to
                      AGENT_SKILLS_DIR when that variable is set.
 
-With no mode flag, a javcli checkout found from the current directory or
-from this script is built. Otherwise the latest Release is installed.
+With no mode flag, the latest GitHub Release is installed.
+Pass --source to build a checkout, or --src DIR to build that checkout.
 
 stdout is one JSON object. Progress is on stderr.
 EOF
@@ -414,17 +414,15 @@ fi
 require_python
 prepare_skill_dest
 
-source_dir=""
-if [[ "${mode}" != "release" ]]; then
+if [[ "${mode}" == "source" || -n "${src}" ]]; then
+  source_dir=""
   if [[ -n "${src}" ]]; then
     source_dir="$(find_module "${src}")" || fail "--src is not a javcli checkout (module github.com/taichi/javcli)"
   elif source_dir="$(find_module "${PWD}")"; then
     :
   else
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    if source_dir="$(find_module "${script_dir}")"; then
-      :
-    elif [[ "${mode}" == "source" ]]; then
+    if ! source_dir="$(find_module "${script_dir}")"; then
       command -v git >/dev/null 2>&1 || fail "git is required to clone ${REPO_GIT}"
       clone_root="$(mktemp -d)"
       printf 'cloning %s\n' "${REPO_GIT}" >&2
@@ -432,9 +430,6 @@ if [[ "${mode}" != "release" ]]; then
       source_dir="${clone_root}/jav"
     fi
   fi
-fi
-
-if [[ -n "${source_dir}" ]]; then
   install_from_source "${source_dir}"
 else
   install_from_release "${release_tag}"

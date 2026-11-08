@@ -15,7 +15,9 @@ JavDB 非官方命令行客户端。搜索番号与关键词、拉取影片详�
 
 ## 安装
 
-需要 [Go 1.24+](https://go.dev/dl/)。仓库地址与 Go module 路径目前不一致（仓库 `github.com/0xtaichim/jav`，module `github.com/taichi/javcli`），请从源码编译：
+优先从 [Releases](https://github.com/taichijma/jav/releases) 下载已编译的二进制（Linux、macOS、Windows，amd64 与 arm64）。同一 Release 里的 `SHA256SUMS` 是校验和。核对后再解压，把 `javcli`（Windows 是 `javcli.exe`）放到 `PATH` 中。发布方式见下方「发布新版本」。
+
+需要从源码编译时，安装 [Go 1.24+](https://go.dev/dl/)。仓库地址与 Go module 路径不一致（仓库 `github.com/0xtaichim/jav`，module `github.com/taichi/javcli`），不要使用 `go install`：
 
 ```bash
 git clone https://github.com/0xtaichim/jav.git
@@ -23,13 +25,12 @@ cd jav
 go build -o javcli .
 ```
 
-将生成的 `javcli` 放到 `PATH` 中，或在当前目录使用 `./javcli`。验证：
+验证：
 
 ```bash
-./javcli --help
+javcli version
+javcli --help
 ```
-
-也可以从 [Releases](https://github.com/0xtaichim/jav/releases) 下载已编译的二进制（Linux、macOS、Windows，amd64 与 arm64）。同一 Release 里的 `SHA256SUMS` 是校验和。发布方式见下方「发布新版本」。
 
 更多调用示例见 [`example.sh`](example.sh)。
 
@@ -214,19 +215,11 @@ func main() {
 
 `javdb.New(...)` 可注入 HTTP 客户端、Base URL、超时、TLS 策略，便于测试。`javdb.NewClient()` 只从环境变量读取，适合简单脚本。
 
-## Agent 技能
+## Agents
 
-技能在 [`.agents/skills/javcli/`](.agents/skills/javcli/SKILL.md)。它说明如何安装、卸载、配置，以及如何调用 `search`、`detail`、`rankings`、`reviews`、`bookmarks`、`config`、`version`。
-
-从 `.agents/skills` 读取项目技能的 Agent，打开本仓库时会直接用到它。要在其它项目里使用，把整个目录复制到该 Agent 自己的技能根目录（含 `references/` 和 `scripts/`）：
-
-```bash
-mkdir -p "$AGENT_SKILLS_DIR"
-rm -rf "$AGENT_SKILLS_DIR/javcli"
-cp -a .agents/skills/javcli "$AGENT_SKILLS_DIR/javcli"
+```text
+Download and install the javcli skill from https://github.com/taichijma/jav/tree/main/.agents/skills/javcli
 ```
-
-`AGENT_SKILLS_DIR` 是当前 Agent 已经在用的技能目录。只复制一个 `SKILL.md` 不够。卸掉这份副本时，把同一个目录传给 `.agents/skills/javcli/scripts/uninstall.sh --skill`。不要删除仓库里的 `.agents/skills/javcli`。
 
 ## 发布新版本
 
