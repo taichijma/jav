@@ -216,12 +216,17 @@ func main() {
 
 ## Agent 技能
 
-Agent 应阅读 [`SKILL.md`](SKILL.md)：何时调用哪条命令、如何解读 JSON、磁力排序规则、以及不要泄露 Cookie。在 Cursor 中安装为个人技能：
+Cursor 打开本仓库时会加载 [`.cursor/skills/javcli/`](.cursor/skills/javcli/SKILL.md)。技能覆盖安装、卸载、配置，以及 `search`、`detail`、`rankings`、`reviews`、`bookmarks`、`config`、`version`。
+
+在其它项目里使用时，复制整个目录（含 `references/` 和 `scripts/`）：
 
 ```bash
-mkdir -p ~/.cursor/skills/javcli
-cp SKILL.md ~/.cursor/skills/javcli/SKILL.md
+mkdir -p ~/.cursor/skills
+rm -rf ~/.cursor/skills/javcli
+cp -a .cursor/skills/javcli ~/.cursor/skills/javcli
 ```
+
+只复制一个 `SKILL.md` 不够。卸掉这份个人副本：`rm -rf ~/.cursor/skills/javcli`。仓库里的 `.cursor/skills/javcli` 留给在本仓库工作的 Agent。
 
 ## 发布新版本
 
