@@ -6,8 +6,9 @@
 bash scripts/uninstall.sh --help
 bash scripts/uninstall.sh --dry-run
 bash scripts/uninstall.sh --prefix "$HOME/.local/bin"
-bash scripts/uninstall.sh --config --skill --dry-run
+bash scripts/uninstall.sh --skill "$AGENT_SKILLS_DIR" --dry-run
 bash scripts/uninstall.sh --config --yes
+bash scripts/uninstall.sh --skill "$AGENT_SKILLS_DIR" --yes
 ```
 
 | 参数 | 作用 |
@@ -15,7 +16,7 @@ bash scripts/uninstall.sh --config --yes
 | `--dry-run` | 只报告，不删除。可以不带 `--yes` |
 | `--prefix DIR` | 额外检查这个目录里的 `javcli` / `javcli.exe`。可重复。标准位置始终会检查 |
 | `--config` | 删除 `${XDG_CONFIG_HOME:-$HOME/.config}/jav`。必须同时有 `--yes`，除非是 `--dry-run` |
-| `--skill` | 删除用户目录里的技能副本。必须同时有 `--yes`，除非是 `--dry-run` |
+| `--skill DIR` | 删除 `DIR/javcli`。`DIR` 是当前 Agent 的技能根目录，与安装时同一个。必须同时有 `--yes`，除非是 `--dry-run` |
 | `--yes` | 允许 `--config` 和 `--skill` 真正删除 |
 
 ## 二进制
@@ -47,14 +48,9 @@ javcli config unset locale
 
 ## 技能副本
 
-`--skill` 只处理这四个目录，且其中 `SKILL.md` 的 frontmatter 必须是 `name: javcli`：
+`--skill` 后面是安装时用的那个技能根目录。脚本只删除其中的 `javcli`，且 `SKILL.md` 的 frontmatter 必须是 `name: javcli`。目录不存在就当作已经卸掉。那个位置不是本技能时，这次什么都不删，原因在 `remove_errors`。
 
-- `$HOME/.cursor/skills/javcli`
-- `$HOME/.agents/skills/javcli`
-- `$HOME/.claude/skills/javcli`
-- `$HOME/.codex/skills/javcli`
-
-仓库里的 `.cursor/skills/javcli` 不在这份清单里，不要手动删掉它。
+仓库里的 `.agents/skills/javcli` 是技能源。对它执行 `--skill` 会被拒绝，源目录保持不动。
 
 ## 环境变量
 

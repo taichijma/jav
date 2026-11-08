@@ -216,17 +216,17 @@ func main() {
 
 ## Agent 技能
 
-Cursor 打开本仓库时会加载 [`.cursor/skills/javcli/`](.cursor/skills/javcli/SKILL.md)。技能覆盖安装、卸载、配置，以及 `search`、`detail`、`rankings`、`reviews`、`bookmarks`、`config`、`version`。
+技能在 [`.agents/skills/javcli/`](.agents/skills/javcli/SKILL.md)。它说明如何安装、卸载、配置，以及如何调用 `search`、`detail`、`rankings`、`reviews`、`bookmarks`、`config`、`version`。
 
-在其它项目里使用时，复制整个目录（含 `references/` 和 `scripts/`）：
+从 `.agents/skills` 读取项目技能的 Agent，打开本仓库时会直接用到它。要在其它项目里使用，把整个目录复制到该 Agent 自己的技能根目录（含 `references/` 和 `scripts/`）：
 
 ```bash
-mkdir -p ~/.cursor/skills
-rm -rf ~/.cursor/skills/javcli
-cp -a .cursor/skills/javcli ~/.cursor/skills/javcli
+mkdir -p "$AGENT_SKILLS_DIR"
+rm -rf "$AGENT_SKILLS_DIR/javcli"
+cp -a .agents/skills/javcli "$AGENT_SKILLS_DIR/javcli"
 ```
 
-只复制一个 `SKILL.md` 不够。卸掉这份个人副本：`rm -rf ~/.cursor/skills/javcli`。仓库里的 `.cursor/skills/javcli` 留给在本仓库工作的 Agent。
+`AGENT_SKILLS_DIR` 是当前 Agent 已经在用的技能目录。只复制一个 `SKILL.md` 不够。卸掉这份副本时，把同一个目录传给 `.agents/skills/javcli/scripts/uninstall.sh --skill`。不要删除仓库里的 `.agents/skills/javcli`。
 
 ## 发布新版本
 

@@ -8,6 +8,7 @@ bash scripts/install.sh --release
 bash scripts/install.sh --release v0.1.0 --prefix "$HOME/.local/bin"
 bash scripts/install.sh --source
 bash scripts/install.sh --src /path/to/jav
+bash scripts/install.sh --release --skills-dir "$AGENT_SKILLS_DIR"
 ```
 
 | 参数 | 作用 |
@@ -16,6 +17,7 @@ bash scripts/install.sh --src /path/to/jav
 | `--release [TAG]` | 下载 GitHub Release。省略 TAG 时用最新版。资产名是 `javcli_<tag>_<os>_<arch>.tar.gz`（Windows 为 `.zip`），并用同一 Release 的 `SHA256SUMS` 校验 |
 | `--source` | 从源码编译。找不到检出时浅克隆 `https://github.com/0xtaichim/jav.git` |
 | `--src DIR` | 编译这个检出。不能和 `--release` 一起用 |
+| `--skills-dir DIR` | 把本技能复制到 `DIR/javcli`。`DIR` 是当前 Agent 已经在加载的技能根目录。省略时使用 `AGENT_SKILLS_DIR`；两者都没有则不复制技能 |
 
 ## 选哪一种
 
@@ -45,11 +47,12 @@ go install github.com/0xtaichim/jav@latest
   "path_hint": "export PATH=\"/home/user/.local/bin:$PATH\"",
   "version": "v0.1.0",
   "commit": "0123456789ab",
-  "date": "2026-01-02T03:04:05Z"
+  "date": "2026-01-02T03:04:05Z",
+  "skill_path": "/home/user/.agents/skills/javcli"
 }
 ```
 
-`method` 是 `release` 或 `source`。`source` 在源码安装时是检出目录，在 Release 安装时是实际下载的资产 URL。文档里的 `0xtaichim/jav` 会跳转到实际仓库，所以 URL 的主机名可能是跳转之后的地址。源码安装的 `version` 一般是 `dev`，`commit` 是 `none`，`date` 是 `unknown`。Release 二进制的 `version` 是 Git 标签。
+`method` 是 `release` 或 `source`。`source` 在源码安装时是检出目录，在 Release 安装时是实际下载的资产 URL。文档里的 `0xtaichim/jav` 会跳转到实际仓库，所以 URL 的主机名可能是跳转之后的地址。源码安装的 `version` 一般是 `dev`，`commit` 是 `none`，`date` 是 `unknown`。Release 二进制的 `version` 是 Git 标签。`skill_path` 是复制后的技能目录；这次没有复制技能时为 `null`。
 
 `on_path` 为 false 时，把 `path_hint` 告诉用户。PATH 里若已有另一个 `javcli`，`path_hint` 会写出那个路径。不要改 `.bashrc`、`.zshrc` 或其它 shell 配置，除非用户要求。
 
@@ -89,16 +92,22 @@ javcli --help
 
 `version` 不读取配置文件。帮助文本里要有 JavDB。到此为止，不要为了验证去请求搜索接口。
 
-## 把技能装到其它项目
+## 把技能装进当前 Agent
 
-在本仓库里工作时，Cursor 会读取 `.cursor/skills/javcli/`，不必复制。
+本仓库的技能在 `.agents/skills/javcli/`。打开这个仓库时，从 `.agents/skills` 读取项目技能的 Agent 会直接用到它。
 
-其它项目也要使用时，复制整个目录（含 `references/` 和 `scripts/`）：
+其它项目也要使用时，复制到**你正在加载技能的那个根目录**。用你自己的目录，不要改放到另一个工具的目录。目录名保持 `javcli`，并带上 `references/` 和 `scripts/`。
 
 ```bash
-mkdir -p "$HOME/.cursor/skills"
-rm -rf "$HOME/.cursor/skills/javcli"
-cp -a .cursor/skills/javcli "$HOME/.cursor/skills/javcli"
+bash scripts/install.sh --release --skills-dir "$AGENT_SKILLS_DIR"
 ```
 
-只复制一个 `SKILL.md` 会缺参考和脚本。Claude、Codex 把目标改成 `~/.claude/skills/javcli` 或 `~/.codex/skills/javcli`。这是给用户目录添加副本，不要删仓库里的技能目录。
+`AGENT_SKILLS_DIR` 就是这个根目录。只想复制技能、不安装二进制时：
+
+```bash
+mkdir -p "$AGENT_SKILLS_DIR"
+rm -rf "$AGENT_SKILLS_DIR/javcli"
+cp -a .agents/skills/javcli "$AGENT_SKILLS_DIR/javcli"
+```
+
+只复制一个 `SKILL.md` 会缺参考和脚本。仓库里的 `.agents/skills/javcli` 是技能源，不要删。

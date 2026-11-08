@@ -12,6 +12,9 @@ prefix="${HOME}/.local/bin"
 src=""
 mode="auto"
 release_tag=""
+skills_dir="${AGENT_SKILLS_DIR:-}"
+skill_src=""
+skill_dest=""
 stage=""
 clone_root=""
 work=""
@@ -45,10 +48,13 @@ usage() {
   cat <<'EOF'
 Usage: install.sh [--prefix DIR] [--release [TAG]] [--source] [--src DIR]
 
-  --prefix DIR     Binary directory. Default: $HOME/.local/bin
-  --release [TAG]  Download a GitHub Release. Omit TAG for the latest.
-  --source         Build from source. Clone if no checkout is found.
-  --src DIR        Build this checkout. Not valid with --release.
+  --prefix DIR       Binary directory. Default: $HOME/.local/bin
+  --release [TAG]    Download a GitHub Release. Omit TAG for the latest.
+  --source           Build from source. Clone if no checkout is found.
+  --src DIR          Build this checkout. Not valid with --release.
+  --skills-dir DIR   Copy this skill to DIR/javcli. DIR is the skills root
+                     the current agent already loads. Defaults to
+                     AGENT_SKILLS_DIR when that variable is set.
 
 With no mode flag, a javcli checkout found from the current directory or
 from this script is built. Otherwise the latest Release is installed.
@@ -129,11 +135,12 @@ emit_ok() {
   local on_path="$4"
   local path_hint="$5"
   local version_json="$6"
-  python3 - "${binary}" "${method}" "${source}" "${on_path}" "${path_hint}" "${version_json}" <<'PY'
+  local skill_path="$7"
+  python3 - "${binary}" "${method}" "${source}" "${on_path}" "${path_hint}" "${version_json}" "${skill_path}" <<'PY'
 import json
 import sys
 
-binary, method, source, on_path, hint, version_raw = sys.argv[1:]
+binary, method, source, on_path, hint, version_raw, skill_path = sys.argv[1:]
 try:
     version = json.loads(version_raw)
 except json.JSONDecodeError as exc:
@@ -152,8 +159,34 @@ print(json.dumps({
     "version": version.get("version", ""),
     "commit": version.get("commit", ""),
     "date": version.get("date", ""),
+    "skill_path": skill_path or None,
 }, ensure_ascii=False))
 PY
+}
+
+is_javcli_skill() {
+  local dir="$1"
+  [[ -f "${dir}/SKILL.md" ]] || return 1
+  awk '
+    NR == 1 && $0 == "---" { fm = 1; next }
+    fm && $0 == "---" { exit found ? 0 : 1 }
+    fm && $0 ~ /^name:[[:space:]]*javcli[[:space:]]*$/ { found = 1 }
+    END { exit found ? 0 : 1 }
+  ' "${dir}/SKILL.md"
+}
+
+prepare_skill_dest() {
+  [[ -n "${skills_dir}" ]] || return 0
+  skill_src="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  mkdir -p "${skills_dir}" || fail "cannot create ${skills_dir}"
+  skills_dir="$(cd "${skills_dir}" && pwd)" || fail "cannot open ${skills_dir}"
+  skill_dest="${skills_dir}/javcli"
+  if [[ "${skill_dest}" == "${skill_src}" ]]; then
+    fail "refusing to copy the skill onto its source at ${skill_src}"
+  fi
+  if [[ -e "${skill_dest}" ]] && ! is_javcli_skill "${skill_dest}"; then
+    fail "refusing to overwrite ${skill_dest} because it is not the javcli skill"
+  fi
 }
 
 prepare_dest() {
@@ -175,9 +208,15 @@ finish_install() {
   local method="$1"
   local source="$2"
   local version_json on_path path_hint found found_canon
+  local skill_path=""
   chmod 755 "${stage}"
   if ! is_javcli "${stage}"; then
     fail "binary failed the javcli --help check"
+  fi
+  if [[ -n "${skill_dest}" ]]; then
+    rm -rf "${skill_dest}"
+    cp -a "${skill_src}" "${skill_dest}" || fail "failed to copy the skill to ${skill_dest}"
+    skill_path="${skill_dest}"
   fi
   mv -f "${stage}" "${dest}"
   stage=""
@@ -196,7 +235,7 @@ finish_install() {
   if [[ "${on_path}" == "false" && -z "${path_hint}" ]]; then
     path_hint="export PATH=\"${prefix}:\$PATH\""
   fi
-  emit_ok "${dest}" "${method}" "${source}" "${on_path}" "${path_hint}" "${version_json}"
+  emit_ok "${dest}" "${method}" "${source}" "${on_path}" "${path_hint}" "${version_json}" "${skill_path}"
 }
 
 install_from_source() {
@@ -335,6 +374,11 @@ while [[ $# -gt 0 ]]; do
       src="$2"
       shift 2
       ;;
+    --skills-dir)
+      [[ $# -ge 2 ]] || fail "--skills-dir requires the skills directory this agent uses" 2
+      skills_dir="$2"
+      shift 2
+      ;;
     --source)
       [[ "${mode}" == "auto" ]] || fail "--source cannot be combined with --release" 2
       mode="source"
@@ -368,6 +412,7 @@ if [[ -n "${src}" && "${mode}" == "release" ]]; then
 fi
 
 require_python
+prepare_skill_dest
 
 source_dir=""
 if [[ "${mode}" != "release" ]]; then

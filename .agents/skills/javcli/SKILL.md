@@ -19,7 +19,7 @@ description: >-
 
 | 用户要做的事 | 先读 |
 | --- | --- |
-| 安装、升级、放入 PATH、把技能复制到用户目录 | [references/install.md](references/install.md) |
+| 安装、升级、放入 PATH、把技能装进当前 Agent 的技能目录 | [references/install.md](references/install.md) |
 | 卸载二进制、删除配置、卸下技能副本 | [references/uninstall.md](references/uninstall.md) |
 | Cookie、SOCKS5、语言、环境变量 | [references/configure.md](references/configure.md) |
 | 搜索、详情、磁力、排行、评论、收藏、版本 | [references/commands.md](references/commands.md) |

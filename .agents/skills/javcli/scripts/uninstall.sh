@@ -6,6 +6,7 @@ set -euo pipefail
 dry_run="false"
 do_config="false"
 do_skill="false"
+skill_root=""
 confirmed="false"
 prefixes=()
 
@@ -23,12 +24,13 @@ fail() {
 
 usage() {
   cat <<'EOF'
-Usage: uninstall.sh [--dry-run] [--prefix DIR] [--config] [--skill] [--yes]
+Usage: uninstall.sh [--dry-run] [--prefix DIR] [--config] [--skill DIR] [--yes]
 
   --dry-run     Report what would be removed. Does not delete.
   --prefix DIR  Also check DIR/javcli and DIR/javcli.exe. Repeatable.
   --config      Remove $XDG_CONFIG_HOME/jav or ~/.config/jav. Requires --yes.
-  --skill       Remove user-level javcli skill copies. Requires --yes.
+  --skill DIR   Remove DIR/javcli. DIR is the skills root this agent loads.
+                Requires --yes. Does not remove the copy shipped in the repo.
   --yes         Allow --config and --skill to delete.
 
 Standard binary locations are always checked. A file is removed only when
@@ -78,14 +80,6 @@ config_dir() {
   fi
 }
 
-skill_dirs() {
-  printf '%s\n' \
-    "${HOME}/.cursor/skills/javcli" \
-    "${HOME}/.agents/skills/javcli" \
-    "${HOME}/.claude/skills/javcli" \
-    "${HOME}/.codex/skills/javcli"
-}
-
 is_javcli_skill() {
   local dir="$1"
   [[ -f "${dir}/SKILL.md" ]] || return 1
@@ -113,8 +107,10 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --skill)
+      [[ $# -ge 2 && "$2" != --* ]] || fail "--skill requires the skills directory this agent uses" 2
+      skill_root="$2"
       do_skill="true"
-      shift
+      shift 2
       ;;
     --yes)
       confirmed="true"
@@ -204,6 +200,25 @@ if [[ "${do_config}" == "true" && "${config_exists}" == "true" ]]; then
   fi
 fi
 
+copies=()
+if [[ "${do_skill}" == "true" ]]; then
+  if [[ -d "${skill_root}" ]]; then
+    skill_root="$(cd "${skill_root}" && pwd)"
+    skill_copy="${skill_root}/javcli"
+    source_skill="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    if [[ -d "${skill_copy}" ]]; then
+      skill_copy="$(cd "${skill_copy}" && pwd)"
+      if [[ "${skill_copy}" == "${source_skill}" ]]; then
+        errors+=("refusing to remove the skill shipped in the repository: ${skill_copy}")
+      elif is_javcli_skill "${skill_copy}"; then
+        copies+=("${skill_copy}")
+      else
+        errors+=("${skill_copy} is not the javcli skill")
+      fi
+    fi
+  fi
+fi
+
 removed=()
 if [[ ${#errors[@]} -eq 0 && "${dry_run}" == "false" && ${#verified[@]} -gt 0 ]]; then
   errfile="$(mktemp)"
@@ -226,14 +241,7 @@ if [[ ${#errors[@]} -eq 0 && "${do_config}" == "true" && "${config_exists}" == "
   fi
 fi
 
-copies=()
 removed_skills=()
-while IFS= read -r skill_dir; do
-  if is_javcli_skill "${skill_dir}"; then
-    copies+=("${skill_dir}")
-  fi
-done < <(skill_dirs)
-
 if [[ ${#errors[@]} -eq 0 && "${do_skill}" == "true" && "${dry_run}" == "false" && ${#copies[@]} -gt 0 ]]; then
   for skill_dir in "${copies[@]}"; do
     if rm -rf "${skill_dir}"; then
