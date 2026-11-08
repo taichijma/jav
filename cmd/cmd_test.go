@@ -68,6 +68,20 @@ func TestRankingsCommandRejectsInvalidPeriod(t *testing.T) {
 	}
 }
 
+func TestVersionCommand(t *testing.T) {
+	out, err := execCLI(t, "version")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var res map[string]string
+	if err := json.Unmarshal([]byte(out), &res); err != nil {
+		t.Fatalf("json %v: %s", err, out)
+	}
+	if res["version"] != "dev" || res["commit"] != "none" || res["date"] != "unknown" {
+		t.Fatalf("%s", out)
+	}
+}
+
 func TestConfigPathCommand(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir)

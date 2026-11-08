@@ -25,3 +25,7 @@ Thumbs.db
 # Temp files
 /tmp/
 *.html
+
+# Python
+__pycache__/
+*.pyc
