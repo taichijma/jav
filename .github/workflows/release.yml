@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Test
+        run: |
+          go test ./...
+          python3 -m unittest discover -s .github/scripts -p 'test_*.py'
+
+      - name: Validate tag
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Refusing to release '$tag'. Push a semver tag such as v1.2.3 or v1.2.3-rc.1."
+            exit 1
+          fi
+
+      - name: Build archives
+        run: .github/scripts/build_release_assets.sh "${GITHUB_REF_NAME}" dist
+
+      - name: Write release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/release_notes.py --tag "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" --sha "${GITHUB_SHA}" > release-notes.md
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if [[ "$tag" == *-* ]]; then
+            flags=(--prerelease --latest=false)
+          else
+            flags=(--prerelease=false --latest)
+          fi
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release edit "$tag" --title "$tag" --notes-file release-notes.md "${flags[@]}"
+            gh release upload "$tag" dist/* --clobber
+          else
+            gh release create "$tag" \
+              --verify-tag \
+              --title "$tag" \
+              --notes-file release-notes.md \
+              "${flags[@]}" \
+              dist/*
+          fi

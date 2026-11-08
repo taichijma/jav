@@ -23,7 +23,7 @@ cd jav
 go build -o javcli .
 ```
 
-把二进制放入 `PATH`，或后续使用 `./javcli`。
+把二进制放入 `PATH`，或后续使用 `./javcli`。已发布的版本也可以从仓库 [Releases](https://github.com/0xtaichim/jav/releases) 下载对应平台的压缩包。`javcli version` 输出 JSON（`version`、`commit`、`date`）；Release 二进制的 `version` 是 Git 标签。
 
 ## 配置（优先级）
 

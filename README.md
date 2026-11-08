@@ -29,6 +29,8 @@ go build -o javcli .
 ./javcli --help
 ```
 
+也可以从 [Releases](https://github.com/0xtaichim/jav/releases) 下载已编译的二进制（Linux、macOS、Windows，amd64 与 arm64）。同一 Release 里的 `SHA256SUMS` 是校验和。发布方式见下方「发布新版本」。
+
 更多调用示例见 [`example.sh`](example.sh)。
 
 ## 配置
@@ -160,6 +162,14 @@ javcli bookmarks remove -t watched SDJS-345
 
 见上方「配置」。子命令：`set`、`get`、`list`、`unset`、`path`。
 
+### version
+
+```bash
+javcli version
+```
+
+输出构建信息：`version`、`commit`、`date`。从源码直接编译时 `version` 为 `dev`。Release 二进制中的 `version` 是对应的 Git 标签，例如 `v0.1.0`。
+
 ## 输出与错误
 
 成功时 stdout 为带缩进的 JSON。失败时进程退出码非 0，stderr 有文本错误，stdout 仍是 JSON：
@@ -213,10 +223,24 @@ mkdir -p ~/.cursor/skills/javcli
 cp SKILL.md ~/.cursor/skills/javcli/SKILL.md
 ```
 
+## 发布新版本
+
+推送语义化版本标签后，GitHub Actions 会自动测试、交叉编译，并创建 GitHub Release。说明来自上一版本标签以来合并的 Pull Request：每条包含标题、作者、链接和 PR 正文里的改进说明，并附上 GitHub 汇总的变更列表。
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+标签形如 `v1.2.3`。带连字符的预发布标签（例如 `v1.2.3-rc.1`）会标成 Pre-release，并且不会覆盖当前的 Latest。Actions 里重跑失败的 workflow 时，会发布或更新这个标签对应的 Release。
+
+给 Pull Request 打上 `enhancement`、`bug`、`documentation` 或 `breaking-change`，紧凑变更列表会按「新功能 / 修复 / 文档 / 破坏性变更」分组；未打标签的归入「其他改进」。不想出现在 Release 里的 PR 打上 `ignore-for-release`。
+
 ## 开发
 
 ```bash
 go test ./...
+python3 -m unittest discover -s .github/scripts -p 'test_*.py'
 ```
 
 网络相关测试会访问外部站点，可能因网络或反爬而失败。HTTP 传输使用 uTLS 模拟 Chrome 指纹，并优先 HTTP/2、失败时回退 HTTP/1.1。

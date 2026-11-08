@@ -1,0 +1,26 @@
+# Groups the compact changelog GitHub generates for a release.
+# Pull requests without one of the labels below land in 其他改进.
+# Label a pull request ignore-for-release to leave it out of the notes.
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+  categories:
+    - title: 破坏性变更
+      labels:
+        - breaking-change
+        - breaking
+    - title: 新功能
+      labels:
+        - enhancement
+        - feature
+    - title: 修复
+      labels:
+        - bug
+        - fix
+    - title: 文档
+      labels:
+        - documentation
+    - title: 其他改进
+      labels:
+        - "*"
